@@ -8,15 +8,12 @@
 #if !defined(LINEFOLLOWER)
 #define LINEFOLLOWER
 
-
+// ros includes
 #include <cv_bridge/cv_bridge.h>
 #include <image_transport/image_transport.h>
-
-
 #include <geometry_msgs/Twist.h>
-// gui includes
 
-static const std::string OPENCV_WINDOW = "Image window";
+
 
 bool _debug = false; 
 
@@ -41,13 +38,11 @@ public:
     catch (cv_bridge::Exception& e)
     {
       ROS_ERROR("cv_bridge exception: %s", e.what());
-    }
+    } 
 
 
     // get a single line from the image
     cv::Mat line = _input->image.row(_input->image.rows * 2 / 3); 
-
-
 
     // the center of the line is found by adding all indices above a provided threshold
     const auto threshold = 100; 
@@ -87,7 +82,7 @@ public:
     const auto p_portion           = error / 1000.0; 
     const auto i_portion           = _error_sum * (1 / 3000.0); 
     const auto d_portion           = 0.0; 
-    const double steering_velocity = p_portion + i_portion + d_portion; 
+    const auto steering_velocity  = p_portion + i_portion + d_portion; 
 
 
 
@@ -111,9 +106,7 @@ public:
 
 private:
   cv_bridge::CvImagePtr _input;
-
-  sensor_msgs::ImageConstPtr _detected_line_image; 
-  double _error_sum; 
+  double                _error_sum; 
 
 };
 
