@@ -29,7 +29,13 @@ public:
 
   ~LineFollower();
 
-  geometry_msgs::Twist setInputImage(const sensor_msgs::ImageConstPtr& msg)
+  /**
+   * @brief Set the Input Image object
+   * 
+   * @param msg 
+   * @return geometry_msgs::Twist 
+   */
+  void setInputImage(const sensor_msgs::ImageConstPtr& msg)
   {
     try
     {
@@ -39,8 +45,13 @@ public:
     {
       ROS_ERROR("cv_bridge exception: %s", e.what());
     } 
+  }
 
 
+  geometry_msgs::Twist process(void)
+  {
+
+    // todo make this own function 
     // get a single line from the image
     cv::Mat line = _input->image.row(_input->image.rows * 2 / 3); 
 
@@ -69,7 +80,7 @@ public:
     }
 
     const double line_row = pixel_index_sum / nr_of_pixel_over_threshold; 
-    const double error    = -(line_row - 160.0); 
+    const double error    = _input->image.cols / 2.0 - line_row; 
 
     // update error sum for i controller 
     _error_sum += error; 
@@ -100,13 +111,12 @@ public:
       ROS_ERROR_STREAM("steering:  " << steering_velocity); 
     }
 
-
     return twist; 
   }
 
 private:
-  cv_bridge::CvImagePtr _input;
-  double                _error_sum; 
+  cv_bridge::CvImagePtr _input;         //!< input image which is unchanged during processing
+  double                _error_sum;     //!< sum of error for pid controller 
 
 };
 

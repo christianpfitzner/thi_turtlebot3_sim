@@ -14,8 +14,8 @@ ros::Publisher vel_pub ;
 
 void imageCallback(const sensor_msgs::ImageConstPtr& msg)
 { 
-  geometry_msgs::Twist twist = lf.setInputImage(msg); 
-
+  lf.setInputImage(msg); 
+  geometry_msgs::Twist twist = lf.process(); 
   vel_pub.publish(twist); 
 }
 
