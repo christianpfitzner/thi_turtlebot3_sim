@@ -1,0 +1,14 @@
+<?xml version="1.0"?>
+<launch>
+
+    <!-- launch the node to start the line following -->
+    <node pkg="thi_turtlebot3_sim" type="follow_red_line_node" name="follow_red_line_node">
+    </node>
+
+
+    <!-- launch the simulation  -->
+    <include file="$(find gazebo_thi)/launch/sim_with_line.launch">
+    </include>
+
+
+</launch>
