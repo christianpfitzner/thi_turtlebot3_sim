@@ -20,13 +20,24 @@ class Frontier
 
 
 
-constexpr auto FREE     =  0;
-constexpr auto UNKNOWN  = -1;  
-constexpr auto OCCUPIED =  1; 
-constexpr auto UNVALID  = -200; 
-constexpr auto FRONTIER = 100; 
+// const values for occupancy grid
+
+namespace thi
+{
+  constexpr auto FREE     =  0;
+  constexpr auto UNKNOWN  = -1;  
+  constexpr auto OCCUPIED =  100;
+
+  constexpr auto UNVALID  = -100; 
+  constexpr auto FRONTIER =  100; 
 
 
+
+/**
+ * @class     Explorer
+ * @author    Prof. Dr. Christian Pfitzner
+ * 
+ */
 class Explorer
 {
   public:
@@ -51,11 +62,13 @@ class Explorer
     }
 
 
-
+    /**
+     * @brief function to process exploration
+     */
     void process(void)
     {
       // resize map to speed up exploration
-      nav_msgs::OccupancyGrid resizedMap      = this->resizeMap(_map);
+      nav_msgs::OccupancyGrid resizedMap      = this->resizeMap(_map, 0.1);
 
       // find frontiers
       nav_msgs::OccupancyGrid frontier_map    = this->findFrontiers(resizedMap);
@@ -68,31 +81,60 @@ class Explorer
     }
 
 
-    nav_msgs::OccupancyGrid resizeMap(const nav_msgs::OccupancyGrid input_map)
+private: 
+
+    /**
+     * @brief Function to resize the occupancy grid
+     * 
+     * @param input_map           input map 
+     * @param output_size         size of the new grid in meter
+     * @return nav_msgs::OccupancyGrid 
+     */
+    nav_msgs::OccupancyGrid resizeMap(const nav_msgs::OccupancyGrid input_map, const double output_size) const
     {
+
+      // generate output occupancy grid
       nav_msgs::OccupancyGrid output; 
 
 
 
-
+      if(_resize_map_pub.getNumSubscribers() > 0)
+      {
+        _resize_map_pub.publish(output); 
+      }
 
       return output; 
     }
 
 
+    /**
+     * @brief Function to check wheater a cell is valid or not
+     * 
+     * @param idx 
+     * @param map 
+     * @return true 
+     * @return false 
+     */
     bool idxInRange(const unsigned int idx, const nav_msgs::OccupancyGrid map) const
     {
+    
       const auto map_size = map.info.width*map.info.height; 
 
       if(idx < 0)        return false; 
 
       if(idx > map_size) return false; 
 
-
       return true; 
     }
 
 
+    /**
+     * @brief Get the Neighbor Indices object
+     * 
+     * @param idx 
+     * @param map 
+     * @return std::vector<int> 
+     */
     std::vector<int> getNeighborIndices(const unsigned int idx, const nav_msgs::OccupancyGrid map) const
     {
       std::vector<int> neighbors; 
@@ -125,7 +167,13 @@ class Explorer
       return neighbors; 
     }
 
-
+    /**
+     * @brief 
+     * 
+     * @param neighbors 
+     * @param map 
+     * @return 
+     */
     bool neighborIsUnknown(const std::vector<int> neighbors, const nav_msgs::OccupancyGrid map) const
     {
       for (size_t i = 0; i < neighbors.size() ; i++)
@@ -137,18 +185,33 @@ class Explorer
     }
 
 
+
+    nav_msgs::OccupancyGrid copy(const nav_msgs::OccupancyGrid input) const 
+    {
+      nav_msgs::OccupancyGrid output; 
+      output.header.frame_id = input.header.frame_id; 
+      output.header.seq      = input.header.seq; 
+      output.header.stamp    = input.header.stamp; 
+      output.info.height     = input.info.height; 
+      output.info.width      = input.info.width;  
+      output.info.height     = input.info.height; 
+      output.info.resolution = input.info.resolution;
+     
+      return output; 
+    }
+
+
+    /**
+     * @brief 
+     * 
+     * @param map 
+     * @return nav_msgs::OccupancyGrid 
+     */
     nav_msgs::OccupancyGrid findFrontiers(const nav_msgs::OccupancyGrid map) const
     {
 
       // todo make this a function to copy the map information
-      nav_msgs::OccupancyGrid frontier_map; 
-      frontier_map.header.frame_id = map.header.frame_id; 
-      frontier_map.header.seq      = map.header.seq; 
-      frontier_map.header.stamp    = map.header.stamp; 
-      frontier_map.info.height     = map.info.height; 
-      frontier_map.info.width      = map.info.width;  
-      frontier_map.info.height     = map.info.height; 
-      frontier_map.info.resolution = map.info.resolution;
+      nav_msgs::OccupancyGrid frontier_map = copy(map);  
       const auto map_size          = frontier_map.info.width * frontier_map.info.height;  
       frontier_map.data.resize(map_size); 
 
@@ -171,8 +234,23 @@ class Explorer
       }
       
 
+      // publish debug message if anyone is interested
+      if(_frontier_map_pub.getNumSubscribers() > 0)
+      {
+        _frontier_map_pub.publish(frontier_map); 
+      }
+
+
+      return frontier_map; 
     }
 
+
+    /**
+     * @brief 
+     * 
+     * @param map 
+     * @return std::vector<Frontier> 
+     */
     std::vector<Frontier> groupFrontiers(const nav_msgs::OccupancyGrid map) const
     {
 
@@ -180,9 +258,20 @@ class Explorer
     }
 
 
+
+    /**
+     * @brief 
+     * 
+     * @param frontiers 
+     * @return std::vector<Frontier> 
+     */
     std::vector<Frontier> weightFrontiers(std::vector<Frontier> frontiers) const
     {
       std::vector<Frontier> weighted_frontiers; 
+
+
+
+
 
       return weighted_frontiers; 
     }
@@ -192,22 +281,39 @@ class Explorer
 
 
   private:
-    ros::NodeHandle         _nh;
-    nav_msgs::OccupancyGrid _map;  
+    ros::NodeHandle         _nh;      //!< node handle of ros node
+    nav_msgs::OccupancyGrid _map;     //!< input of occupancy grid
+
+    ros::Publisher          _resize_map_pub; 
+    ros::Publisher          _frontier_map_pub; 
 };
+
+
+
 
 
 
 Explorer::Explorer(ros::NodeHandle nh)
 {
   _nh = nh; 
+
+  constexpr auto queue_size = 1; 
+
+  _resize_map_pub   = _nh.advertise<nav_msgs::OccupancyGrid>("debug/resized_map",  queue_size); 
+  _frontier_map_pub = _nh.advertise<nav_msgs::OccupancyGrid>("debug/frontier_map", queue_size); 
+
+
+  
 }
+
+
 
 Explorer::~Explorer(void)
 {
 
 }
 
+};
 
 
 #endif // EXPLORER
