@@ -14,15 +14,14 @@ nav_msgs::OccupancyGrid::ConstPtr _map;
 
 
 
-std::unique_ptr<Explorer> e; 
+std::unique_ptr<thi::Explorer> e; 
 
 
 
 void mapCallback(const nav_msgs::OccupancyGrid::ConstPtr map)
 {
-
+   ROS_ERROR_STREAM(__PRETTY_FUNCTION__);
    e->setMap(map);
-
    e->process(); 
 }
 
@@ -38,10 +37,10 @@ int main(int argc, char **argv)
    ros::Subscriber map_sub = n.subscribe("map", 1, mapCallback);
 
 
-   e = std::make_unique<Explorer>(n); 
+   e = std::make_unique<thi::Explorer>(n); 
 
 
-   ros::Rate loop_rate(100);
+   ros::Rate loop_rate(1);
    while(ros::ok())
    {
       ros::spin(); 
