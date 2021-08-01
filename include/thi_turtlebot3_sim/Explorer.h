@@ -28,8 +28,9 @@ namespace thi
   constexpr auto UNKNOWN  = -1;  
   constexpr auto OCCUPIED =  100;
 
-  constexpr auto UNVALID  = -100; 
-  constexpr auto FRONTIER =  100; 
+  constexpr auto UNVALID     =  0; 
+  constexpr auto FRONTIER    =  100; 
+  constexpr auto NO_FRONTIER =  100; 
 
 
 
@@ -67,17 +68,17 @@ class Explorer
      */
     void process(void)
     {
-      // resize map to speed up exploration
-      nav_msgs::OccupancyGrid resizedMap      = this->resizeMap(_map, 0.1);
+      // // resize map to speed up exploration
+      // const nav_msgs::OccupancyGrid resizedMap      = this->resizeMap(_map, 0.1);
 
       // find frontiers
-      nav_msgs::OccupancyGrid frontier_map    = this->findFrontiers(resizedMap);
+      const nav_msgs::OccupancyGrid frontier_map    = this->findFrontiers(_map);
 
-      // group frontiers 
-      std::vector<Frontier> frontier_grouped  = this->groupFrontiers(frontier_map);
+      // // group frontiers 
+      // const std::vector<Frontier> frontier_grouped  = this->groupFrontiers(frontier_map);
 
-      // weight frontiers      
-      std::vector<Frontier> frontier_weighted = this->weightFrontiers(frontier_grouped);
+      // // weight frontiers      
+      // const std::vector<Frontier> frontier_weighted = this->weightFrontiers(frontier_grouped);
     }
 
 
@@ -95,6 +96,10 @@ private:
 
       // generate output occupancy grid
       nav_msgs::OccupancyGrid output; 
+
+
+
+
 
 
 
@@ -216,23 +221,41 @@ private:
       frontier_map.data.resize(map_size); 
 
 
+
+      ROS_ERROR_STREAM("Size: " << frontier_map.data.size());
+
       // iterate over all frontier cells 
       const auto nr_of_cells = map.info.height*map.info.width; 
 
       for (size_t i = 0; i < nr_of_cells; i++)
       {
         const auto current_cell = map.data[i];
-        if(current_cell == FREE)
+
+
+
+        if(current_cell == UNKNOWN)
         {
           const std::vector<int> neighbors = this->getNeighborIndices(i, map); 
+          ROS_ERROR_STREAM("free"); 
 
           if( this->neighborIsUnknown(neighbors, map))
           {
             frontier_map.data[i] = FRONTIER; 
+            ROS_ERROR_STREAM("1"); 
           }
+          else 
+          {
+            frontier_map.data[i] = NO_FRONTIER;
+          }
+        }
+        else
+        {
+          frontier_map.data[i] = NO_FRONTIER; 
         }
       }
       
+
+      ROS_ERROR_STREAM(__PRETTY_FUNCTION__); 
 
       // publish debug message if anyone is interested
       if(_frontier_map_pub.getNumSubscribers() > 0)
@@ -303,7 +326,7 @@ Explorer::Explorer(ros::NodeHandle nh)
   _frontier_map_pub = _nh.advertise<nav_msgs::OccupancyGrid>("debug/frontier_map", queue_size); 
 
 
-  
+
 }
 
 
